@@ -6,7 +6,6 @@ import { useApi } from '../contexts/ApiContext';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { SearchProps } from 'antd/es/input/Search';
 import type { TableProps } from 'antd';
-import { useForm } from 'antd/es/form/Form';
 
 const { Search } = Input;
 const { Title, Paragraph } = Typography;
@@ -22,7 +21,7 @@ interface DataType {
 const Main: React.FC = () => {
 
   const { contacts, getContacts, addContact, removeContact, currentPage, currentLimit, totalContacts } = useApi();
-  const [form] = useForm();
+  const [form] = Form.useForm();
   const [openDrawer, setOpenDrawer] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
 
