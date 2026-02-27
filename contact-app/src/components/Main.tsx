@@ -20,7 +20,7 @@ interface DataType {
 
 const Main: React.FC = () => {
 
-  const { contacts, getContacts, addContact, removeContact, currentPage, currentLimit, totalContacts } = useApi();
+  const { contacts, getContacts, addContact, removeContact, currentPage, currentLimit, totalContacts, isLoading, errorMessage, clearError } = useApi();
   const [form] = Form.useForm();
   const [openDrawer, setOpenDrawer] = useState(false);
   const [messageApi, contextHolder] = message.useMessage();
@@ -38,13 +38,17 @@ const Main: React.FC = () => {
 
   useEffect(() => {
     getContacts();
-  }, [currentPage]);
+  }, []);
 
-  /*
   useEffect(() => {
-    console.log("Usuarios:", contacts);
-  }, [contacts]);
-  */
+    if (! errorMessage) return; 
+    
+    messageApi.open({
+      type: 'error',
+      content: errorMessage,
+    });
+    clearError();
+  }, [errorMessage, messageApi, clearError]);
 
   const showDrawer: () => void = () => {
     setOpenDrawer(true);
@@ -174,7 +178,7 @@ const Main: React.FC = () => {
 
       <Divider />
 
-      <Table rowKey="id" columns={columns} dataSource={contacts} pagination={paginationConfig} />
+      <Table rowKey="id" columns={columns} dataSource={contacts} pagination={paginationConfig} loading={isLoading} />
 
       <Drawer
         title='Agregar nuevo Contacto'

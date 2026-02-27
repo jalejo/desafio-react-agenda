@@ -16,10 +16,12 @@ interface ApiContextProps {
   currentLimit: number;
   setCurrentPage: React.Dispatch<React.SetStateAction<number>>;
   setCurrentLimit: React.Dispatch<React.SetStateAction<number>>;
-  getContacts: (searchText?: string, page?: number, pageSize?: number) => void;
-  addContact: (contact: Contact) => Promise<void>;
+  getContacts: (searchText?: string, page?: number, pageSize?: number) => Promise<void>;
+  addContact: (contact: Partial<Contact>) => Promise<void>;
   removeContact: (id: string) => Promise<void>;
-  //contactsImageExists: boolean[];
+  isLoading: boolean;
+  errorMessage: string | null;
+  clearError: () => void;
 }
 
 const ApiContext = createContext<ApiContextProps | undefined>(undefined);
@@ -32,20 +34,34 @@ export const ApiProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [currentLimit, setCurrentLimit] = useState<number>(6);
 
-  //const [ contactsImageExists, setContactsImageExists ] = useState<boolean[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const clearError = () => setErrorMessage(null);
 
   /************** GET CONTACT LIST  BY PAGINATION AND SEARCH BAR **************/
 
   const getContacts = async (searchText?: string, page?: number, pageSize?: number) => {
+
+    setIsLoading(true);
+    setErrorMessage(null);
+
     try {
+      //Se refactoriza error en la función getContacts para que pueda ser utilizada tanto en el useEffect de carga inicial, como en la función de búsqueda y paginación.
 
-      // set url : si el usuario usa el input search paginara automáticamente, no se hace paginación ya que no se esta llamando a todo el contenido del json aunque de ser necesario se puede ajustar y concatenar junto a los otros parámetros, y el total no se toma del X-Total-Count, si no del length (jsonContactsData.length) que se va generando para que no de paginas basadas en el total. 
+      const pageToUse = page ?? currentPage;
+      const limitToUse = pageSize ?? currentLimit;
 
-      let url: string;
-      searchText ?
-        (url = `${APIurl}?q=${encodeURIComponent(searchText)}`)
-        : url = `${APIurl}?_page=${currentPage}&_limit=${currentLimit}`;
+
+      const params = new URLSearchParams();
+
+      const q = searchText?.trim();
+      if (q) { params.set('q', q)};
+
+      params.set('_page', pageToUse.toString());
+      params.set('_limit', limitToUse.toString());
+
+      const url = `${APIurl}?${params.toString()}`;
 
       const response = await fetch(url, {
         method: 'GET',
@@ -58,40 +74,27 @@ export const ApiProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
 
-      const jsonContactsData = await response.json();
-      setContacts(jsonContactsData);
+      const data : Contact[] = await response.json();
+      setContacts(data);
 
       //Get Total of users: para la paginación se necesita el total de registros, 'X-Total-Count' devuelve un string con el total, por eso requiere un parseInt, y una validación de nulidad - [Depende del Server, se recomienda hacer pruebas antes]   
 
       const totalCount = parseInt(response.headers.get('X-Total-Count') ?? '0', 10);
       setTotalContacts(totalCount);
 
-      //console.log("🍄 ~ totalCount:", totalCount);
 
-      page && setCurrentPage(page);
-      pageSize && setCurrentLimit(pageSize);
+      if ( page !== undefined ) setCurrentPage(page);
+      if ( pageSize !== undefined ) setCurrentLimit(pageSize);
 
-      // Verificar la existencia de las imágenes aquí y actualizar el estado
-      /*const imageExistence = await Promise.all(
-        jsonContactsData.map(async (user: Contact) => {
-          try {
-            await fetch(user.photo, { method: 'HEAD' });
-            return true;
-          } catch (error) {
-            return false;
-          }
-        })
-      );
+    } catch (error : any ) {
 
-      setContactsImageExists(imageExistence);*/
-
-    } catch (error) {
-      console.error('Error getting contacts: ', error);
+      const msg = error?.message?.includes("Failed to fetch")
+      ? "Error de conexión: No se pudo conectar al servidor. Por favor, intente nuevamente más tarde." 
+      : "Error al obtener contactos: " + error?.message;
+      setErrorMessage(msg);
+    } finally {
+      setIsLoading(false);
     }
-    /*
-    console.log("🍄 ~ pageSize:", pageSize)
-    console.log("🍄 ~ page:", page)*/
-
   }
 
   /************** ADD NEW CONTACT **************/
@@ -101,7 +104,7 @@ export const ApiProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const response = await fetch(APIurl, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          Accept: "application/json"
         },
         body: JSON.stringify(contactData)
 
@@ -145,7 +148,9 @@ export const ApiProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     currentLimit,
     setCurrentPage,
     setCurrentLimit,
-    //contactsImageExists,
+    isLoading,
+    errorMessage,
+    clearError
   };
 
   return <ApiContext.Provider value={contextValue}>{children}</ApiContext.Provider>
