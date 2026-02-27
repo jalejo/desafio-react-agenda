@@ -94,13 +94,22 @@ const Main: React.FC = () => {
     }
   }
 
-  const onSearch: SearchProps['onSearch'] = (value, event) => {
-    getContacts(value);
+  const onSearch: SearchProps['onSearch'] = (value) => {
+    const q = value.trim();
+    if (!q) {
+      getContacts( undefined, 1, currentLimit );
+      return;
+    }
+    getContacts(q, 1, currentLimit); // para buscar siempre desde la página 1
   }
 
   const onChange: SearchProps['onChange'] = (event) => {
-    const value = event.target.value;
-    getContacts(value);
+    const q = event.target.value.trim();
+    if (!q) {
+      getContacts( undefined, 1, currentLimit );
+      return;
+    } 
+    getContacts(q, 1, currentLimit); // para buscar siempre desde la página 1
   }
 
   const columns: TableProps<DataType>['columns'] = [
