@@ -101,12 +101,20 @@ export const ApiProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addContact = async (contactData: Partial<Contact>) => {
     try {
+
+      const payload = {
+        name: contactData.name,
+        description: contactData.description,
+        photo: contactData.photo
+      }
+
       const response = await fetch(APIurl, {
         method: 'POST',
         headers: {
-          Accept: "application/json"
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify(contactData)
+        body: JSON.stringify(payload)
 
       });
       if (!response.ok) {
