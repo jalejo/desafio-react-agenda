@@ -7,6 +7,6 @@ const PORT = 9000;
 
 server.use(middlewares);
 server.use("/api", router);
-server.listen(9000, () => {
-  console.log(`JSON Server is running in http://locahost:${PORT}`);
+server.listen(PORT, () => {
+  console.log(`JSON Server is running in http://localhost:${PORT}`);
 });
